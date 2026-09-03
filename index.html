@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="DrawVLA-Verify: a benchmark and validator for circle-and-arrow sketch instructions, formalizing sketch-prompt validation before a robot acts.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DrawVLA-Verify: Learning to Validate Circle-and-Arrow Robot Instructions from Simulator Ground Truth</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bulma-carousel/4.0.24/css/bulma-carousel.min.css">
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bulma-slider/2.0.5/css/bulma-slider.min.css">
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script defer
+          src="https://cdnjs.cloudflare.com/ajax/libs/bulma-carousel/4.0.24/js/bulma-carousel.min.js"></script>
+  <script defer
+          src="https://cdnjs.cloudflare.com/ajax/libs/bulma-slider/2.0.5/js/bulma-slider.min.js"></script>
+  <script defer src="./static/js/index.js"></script>
+
+  <script>
+    MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" defer></script>
+</head>
+<body>
+
+<!-- ===================================================================
+     ANONYMITY NOTE (remove this comment block once safe to do so):
+     paper.tex states this work is under ICRA 2026 double-blind review
+     with authors withheld. This page currently mirrors that -- author
+     names are left as "Anonymous Author(s)" and the arXiv/code/dataset
+     links are placeholders. Fill them in only once the team has
+     confirmed this is consistent with the venue's anonymity policy.
+     =================================================================== -->
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-2 publication-title">
+            DrawVLA-Verify: Learning to Validate Circle-and-Arrow Robot
+            Instructions from Simulator Ground Truth
+          </h1>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">Anonymous Author(s)</span>
+          </div>
+          <div class="is-size-6 publication-authors">
+            <span class="author-block">Submitted to ICRA 2026 &mdash; under double-blind review</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- Paper (arXiv placeholder) -->
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark" aria-disabled="true">
+                  <span class="icon"><i class="fas fa-file-pdf"></i></span>
+                  <span>Paper (TODO)</span>
+                </a>
+              </span>
+              <!-- Code (placeholder) -->
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark" aria-disabled="true">
+                  <span class="icon"><i class="fab fa-github"></i></span>
+                  <span>Code (TODO)</span>
+                </a>
+              </span>
+              <!-- Dataset (placeholder) -->
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark" aria-disabled="true">
+                  <span class="icon"><i class="fas fa-database"></i></span>
+                  <span>Dataset (TODO)</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Teaser -->
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <figure class="paper-figure">
+        <img src="./static/images/intro_teaser.png"
+             alt="Language versus sketch as an instruction interface: a sentence stays ambiguous when the scene
+                  contains duplicate objects, while a circle-and-arrow sketch pins down both referent and destination.">
+        <figcaption>
+          <strong>Language versus sketch as an instruction interface.</strong>
+          <em>Left:</em> even a fully formed sentence stays ambiguous when the scene contains duplicate objects
+          &mdash; &ldquo;the left moka pot&rdquo; depends on the speaker's viewpoint, and the destination must be
+          spelled out in words. <em>Right:</em> a circle-and-arrow sketch with the name-free caption
+          &ldquo;put this there&rdquo; pins down both the referent and the destination directly in image space.
+          This paper addresses the question such an interface raises but prior work skips: how does the robot know
+          the drawing itself is correct?
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- Abstract -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-full">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Sketching is a fast, low-effort way for a person to tell a robot what to do: a hand-drawn circle
+            names <em>which</em> object to manipulate, an arrow names <em>where</em> it should go, and a short
+            name-free caption (&ldquo;move this there&rdquo;) supplies the verb. Sketches sidestep the referential
+            ambiguity of language in cluttered scenes that contain duplicate objects. However, a drawing is only
+            useful if it is correct: circles can miss their target, enclose two objects, or land on empty table;
+            arrows can point to the wrong place, detach from the circled object, or contradict the caption; and
+            each channel can look fine in isolation while being jointly inconsistent. Prior sketch-instruction
+            systems <em>assume</em> the drawing is valid and execute it. We instead formulate sketch-prompt
+            <em>validation</em> as an explicit, benchmarked binary task: before the robot acts, decide whether a
+            drawn instruction is correct, mutually consistent across channels, and sufficient to execute. To our
+            knowledge this is the first treatment of visual-instruction validation as a standalone task. We build
+            DrawVLA-Verify, a simulator-grounded pipeline that extracts ground-truth geometry from LIBERO
+            demonstrations and renders both valid prompts (with guarded human-imprecision augmentation) and
+            controlled counterfactual failures, yielding 37,970 labeled examples across 40 tasks with
+            demo-disjoint splits and no manual annotation. Strong vision-language models (VLMs) fail this task
+            zero-shot (best: Gemini&nbsp;3.7&nbsp;Flash at 0.79 accuracy). A compact fine-tuned validator
+            (Qwen3-VL-4B with LoRA) reaches 0.94 accuracy and 0.92 macro-F1, outperforming the strongest zero-shot
+            VLM by 15 accuracy points. We also report a diagnostic finding we consider scientifically important: a
+            classifier given only the exact sketch geometry (circle and arrow coordinates, no pixels and no
+            caption text) reaches 93.24% accuracy. Part of that is by construction, since several corruption modes
+            are geometric predicates by definition; the remainder shows the generator shifting coordinate
+            statistics in ways a shortcut learner can exploit. Finally, we evaluate the trained validators on 280
+            sketches drawn by real users in a browser interface: accuracy falls from 0.94 to 0.636, giving a
+            direct measurement of the synthetic-to-human gap rather than an assumption about it. We therefore
+            release DrawVLA-Verify as a validated data-generation <em>framework</em> and diagnostic benchmark for
+            trustworthy sketch-based human-robot interaction, and we discuss the synthetic-to-human sketch gap and
+            geometric shortcuts as open problems.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Problem formulation / System design -->
+<section class="section" id="method">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Problem Formulation &amp; System Design</h2>
+
+    <div class="example-grid">
+      <figure>
+        <img src="./static/images/prompt_valid.png" alt="A valid circle-and-arrow prompt.">
+        <figcaption><span class="tag-valid">valid</span> circle and arrow agree, one reading survives</figcaption>
+      </figure>
+      <figure>
+        <img src="./static/images/prompt_circle_near_miss.png" alt="A near-miss circle prompt.">
+        <figcaption><span class="tag-invalid">A3</span> near-miss circle &mdash; \(v_C=0\)</figcaption>
+      </figure>
+      <figure>
+        <img src="./static/images/prompt_wrong_destination.png" alt="A wrong-destination arrow prompt.">
+        <figcaption><span class="tag-invalid">B1</span> wrong destination &mdash; \(v_A=0\)</figcaption>
+      </figure>
+      <figure>
+        <img src="./static/images/prompt_crossmodal_mismatch.png" alt="A cross-modal mismatch prompt.">
+        <figcaption><span class="tag-invalid">C1</span> circle&ndash;arrow mismatch &mdash; \(v_X=0\)</figcaption>
+      </figure>
+    </div>
+
+    <div class="content has-text-justified">
+      <p>
+        A sketch prompt is a tuple \(P=(I,C,A,L)\), where \(I\) is the RGB scene observation, \(C\) is the drawn
+        circle (center and radius) denoting <em>which</em> object to manipulate, \(A\) is the drawn arrow (tail
+        and head) denoting <em>where</em> the object should move, and \(L\) is a short, name-free deictic caption
+        (e.g., &ldquo;move this there&rdquo;).
+      </p>
+      <p>
+        We define per-channel validity predicates \(v_C\), \(v_A\), \(v_L\) (circle, arrow, caption correctness),
+        a cross-modal consistency predicate \(v_X\) (do the channels agree with each other), and a sufficiency
+        predicate \(v_S\) (does the prompt determine a <em>unique</em> executable action). A prompt is valid iff
+        all conditions hold jointly:
+      </p>
+      <p class="has-text-centered">
+        \[ V(P) \;=\; v_C(P)\,\wedge\,v_A(P)\,\wedge\,v_L(P)\,\wedge\,v_X(P)\,\wedge\,v_S(P) \]
+      </p>
+      <p>
+        The validation task is to learn a classifier \(f_\theta(P)\in\{\textsc{accept},\textsc{reject}\}\) that
+        predicts \(V(P)\) from the observable prompt. Crucially, a prompt can satisfy every per-channel predicate
+        yet still be invalid because the channels disagree (\(v_X=0\)) or the target is ambiguous (\(v_S=0\)),
+        which is why validation cannot be reduced to independent per-channel checks.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Failure taxonomy -->
+<section class="section" id="taxonomy">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Failure Taxonomy</h2>
+    <div class="content has-text-justified">
+      <p>
+        Sketch-prompt failures are organized into four corruption families (Referential, Directional, Cross-modal,
+        Language), plus a Grounding configuration family that stresses ambiguity/sufficiency rather than outright
+        error, and a defined-but-deferred Physical family. Fourteen of 18 defined modes are generated in the
+        released dataset.
+      </p>
+    </div>
+    <div class="table-container">
+      <table class="table clean-table grouped is-fullwidth">
+        <thead>
+          <tr><th>ID</th><th>Family</th><th>Mode</th><th>Description</th><th>Cov.</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group-start"><td>A2</td><td rowspan="5">Referential<br>(circle / &ldquo;which&rdquo;)</td><td>Wrong-category object</td><td>Circle a clearly different object than the target.</td><td>&check;</td></tr>
+          <tr><td>A3</td><td>Near-miss circle</td><td>Offset the center so the target falls outside or grazes the circle.</td><td>&check;</td></tr>
+          <tr><td>A4</td><td>Empty-region circle</td><td>Circle bare table/background containing no object.</td><td>&check;</td></tr>
+          <tr><td>A5</td><td>Multi-object enclosure</td><td>Inflate the radius to enclose the target and a distractor.</td><td>&check;</td></tr>
+          <tr><td>A6</td><td>Degenerate size</td><td>Dot-sized or whole-frame circle that selects nothing meaningful.</td><td>&check;</td></tr>
+
+          <tr class="group-start"><td>B1</td><td rowspan="6">Directional<br>(arrow / &ldquo;where&rdquo;)</td><td>Wrong destination</td><td>Retarget the arrow head to a different container/region.</td><td>&check;</td></tr>
+          <tr><td>B3</td><td>Wrong magnitude</td><td>Correct bearing but arrow far too short or overshooting.</td><td>&check;</td></tr>
+          <tr><td>B4</td><td>Wrong bearing</td><td>Correct length but head rotated 90&deg;/180&deg;.</td><td>&check;</td></tr>
+          <tr><td>B5</td><td>Null destination</td><td>Head on empty table or off-frame.</td><td>&check;</td></tr>
+          <tr><td>B6</td><td>Detached tail</td><td>Shaft plausible but tail not anchored on the circled object.</td><td>&check;</td></tr>
+          <tr><td>B7</td><td>Spec mismatch</td><td>Arrow present on a circle-only task, or missing on a place task.</td><td>&check;</td></tr>
+
+          <tr class="group-start"><td>C1</td><td rowspan="3">Cross-modal<br>(each valid alone)</td><td>Circle&ndash;arrow mismatch</td><td>Circle object A while the arrow originates from object B.</td><td>&check;</td></tr>
+          <tr><td>C2</td><td>Caption&ndash;sketch mismatch</td><td>Correct sketch, but caption swapped from another demo/task.</td><td>&mdash;</td></tr>
+          <tr><td>C3</td><td>Predicate mismatch</td><td>Caption names an action inconsistent with the sketch's action type.</td><td>&mdash;</td></tr>
+
+          <tr class="group-start"><td>D1</td><td rowspan="4">Language<br>(caption / &ldquo;what&rdquo;)</td><td>Wrong target noun</td><td>Caption names the wrong object.</td><td>&mdash;</td></tr>
+          <tr><td>D2</td><td>Wrong destination noun</td><td>Caption names the wrong destination.</td><td>&mdash;</td></tr>
+          <tr><td>D3</td><td>Wrong verb</td><td>Caption verb wrong (pick vs. push vs. open).</td><td>&check;</td></tr>
+          <tr><td>D4</td><td>Under-determined</td><td>Ladder-level caption: valid with a good sketch, invalid with a bad one.</td><td>&check;</td></tr>
+
+          <tr class="group-start"><td>&mdash;</td><td>Grounding<br>(configurations)</td><td>Five configurations</td><td>Stress ambiguity/sufficiency: fully resolved, no sketch, open destination, identical referents, arrow between destinations.</td><td>&check;</td></tr>
+
+          <tr class="group-start"><td>E1</td><td>Physical<br>(<em>deferred</em>)</td><td>Occluded target</td><td>Circle a target not visible in that frame. Deferred: generator yielded only 18 rows.</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Dataset composition -->
+<section class="section" id="dataset">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Dataset</h2>
+    <div class="content has-text-justified">
+      <p>
+        Labels are built from LIBERO demonstrations (800 demos across 40 tasks), with demo-disjoint splits so no
+        demonstration contributes frames to more than one split. Valid prompts use guarded human-imprecision
+        augmentation (jittered centers, imperfect radii, hand-like arrow shafts) with in-point/out-point guards so
+        augmentation cannot accidentally produce an ambiguous prompt. Negatives apply the taxonomy above to valid
+        prompts, one controlled corruption at a time. Captions are sampled only from name-free levels L2/L3 (e.g.,
+        &ldquo;move this there&rdquo;), forcing reliance on the sketch rather than the text.
+      </p>
+    </div>
+    <div class="table-container">
+      <table class="table clean-table is-fullwidth">
+        <thead><tr><th>Family</th><th>Train</th><th>Val</th><th>Test</th></tr></thead>
+        <tbody>
+          <tr><td>Referential</td><td>6,354</td><td>766</td><td>834</td></tr>
+          <tr><td>Directional</td><td>7,338</td><td>904</td><td>958</td></tr>
+          <tr><td>Cross-modal</td><td>1,212</td><td>150</td><td>158</td></tr>
+          <tr><td>Language</td><td>2,556</td><td>308</td><td>336</td></tr>
+          <tr><td>Grounding</td><td>5,648</td><td>695</td><td>655</td></tr>
+          <tr><td>Positive</td><td>7,194</td><td>879</td><td>1,025</td></tr>
+          <tr class="winner-row"><td>Total</td><td>30,302</td><td>3,702</td><td>3,966</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="has-text-centered">
+      37,970 examples total &mdash; 9,098 positives / 28,872 negatives.
+    </p>
+
+    <figure class="paper-figure is-wide">
+      <img src="./static/images/prompt_gallery.png"
+           alt="Twelve representative prompts from the test set: two valid prompts and ten controlled
+                counterfactual failures spanning the referential, directional, cross-modal, language and
+                grounding families.">
+      <figcaption>
+        <strong>Representative prompts from the 3,966-example physical-free test set</strong>, one per family.
+        The first two panels are <em>valid</em> prompts (green); the remaining ten are controlled counterfactual
+        failures drawn from the referential (circle), directional (arrow), cross-modal, and language families,
+        together with two grounding configurations (<em>arrow between destinations</em>, <em>identical
+        referents</em>) that are invalid because the intended action is under-determined rather than wrong.
+        Each panel shows the rendered prompt and its name-free caption, the ground-truth label, and whether the
+        strongest zero-shot VLM (ZS) and our fine-tuned Qwen3-VL-4B&nbsp;+&nbsp;LoRA validator decided correctly
+        (&check;) or not (&times;). Failures of both models concentrate on the geometrically subtle modes rather
+        than on gross errors.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- Results -->
+<section class="section" id="results">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Results</h2>
+
+    <h3 class="title is-4">Main comparison</h3>
+    <div class="content has-text-justified">
+      <p>
+        Zero-shot VLMs are weak: the best, Gemini&nbsp;3.7&nbsp;Flash, reaches only 0.79 accuracy (0.43 MCC).
+        Fine-tuning reverses this &mdash; Qwen3-VL-4B&nbsp;+&nbsp;LoRA reaches 0.94 accuracy, beating the strongest
+        zero-shot VLM by 15 accuracy points. A geometry-only diagnostic classifier (no pixels, no caption text)
+        reaches 93.24% accuracy; it is <strong>not</strong> directly comparable to the VLM rows &mdash; see
+        discussion below.
+      </p>
+    </div>
+    <div class="table-container">
+      <table class="table clean-table is-fullwidth">
+        <thead><tr><th>Model</th><th>Acc</th><th>BAcc</th><th>F1</th><th>MCC</th></tr></thead>
+        <tbody>
+          <tr class="section-row"><td colspan="5">Zero-shot VLMs</td></tr>
+          <tr><td>Qwen3-VL-2B</td><td>0.32</td><td>0.54</td><td>0.30</td><td>0.13</td></tr>
+          <tr><td>Qwen3-VL-4B</td><td>0.46</td><td>0.61</td><td>0.46</td><td>0.22</td></tr>
+          <tr><td>Claude Sonnet 4.6</td><td>0.67</td><td>0.59</td><td>0.59</td><td>0.18</td></tr>
+          <tr><td>GPT-5.6 Luna</td><td>0.71</td><td>0.62</td><td>0.62</td><td>0.24</td></tr>
+          <tr><td>GPT-5.6 Terra</td><td>0.72</td><td>0.63</td><td>0.63</td><td>0.25</td></tr>
+          <tr><td>Claude Haiku 4.5</td><td>0.73</td><td>0.50</td><td>0.44</td><td>0.01</td></tr>
+          <tr><td>Gemini 3.7 Flash</td><td>0.79</td><td>0.71</td><td>0.71</td><td>0.43</td></tr>
+
+          <tr class="section-row"><td colspan="5">Fine-tuned validators (ours)</td></tr>
+          <tr><td>SmolVLM-256M + LoRA</td><td>0.89</td><td>0.83</td><td>0.84</td><td>0.69</td></tr>
+          <tr><td>SmolVLM-500M + LoRA</td><td>0.90</td><td>0.84</td><td>0.86</td><td>0.72</td></tr>
+          <tr><td>Qwen3-VL-2B + LoRA</td><td>0.91</td><td>0.87</td><td>0.88</td><td>0.75</td></tr>
+          <tr class="winner-row"><td>Qwen3-VL-4B + LoRA</td><td>0.94</td><td>0.92</td><td>0.92</td><td>0.83</td></tr>
+
+          <tr class="section-row"><td colspan="5">Diagnostic</td></tr>
+          <tr><td>Geometry-only (HGB)&dagger;</td><td>0.93</td><td>0.91</td><td>0.91</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+      <p class="is-size-7">
+        &dagger; Given the renderer's exact circle/arrow coordinates (no pixels, no caption text); not directly
+        comparable to the VLM rows.
+      </p>
+    </div>
+
+    <figure class="paper-figure">
+      <img src="./static/images/fig_accuracy_by_problem.png"
+           alt="Per-mode accuracy of zero-shot versus LoRA-adapted Qwen3-VL-4B, broken down by problem ID,
+                with 95% Wilson confidence intervals.">
+      <figcaption>
+        <strong>Per-mode effect of fine-tuning.</strong> Zero-shot versus LoRA-adapted Qwen3-VL-4B on the matched
+        physical-free test split, broken down by problem ID (slice size in gray); valid prompts are omitted.
+        Whiskers are 95% Wilson intervals. Zero-shot accuracy is near zero on almost every invalid mode &mdash;
+        the model approves nearly everything it is shown &mdash; for 0.46 overall; LoRA lifts every mode, several
+        to ceiling, for 0.94 overall. The one cost is on valid prompts, where accuracy falls from 0.92 to 0.86.
+      </figcaption>
+    </figure>
+
+    <h3 class="title is-4">Geometry-only diagnostic</h3>
+    <div class="content has-text-justified">
+      <p>
+        This 93.24% number is a diagnostic, not a ranking against the multimodal validators: the baseline is
+        handed the renderer's exact coordinates, whereas a VLM must first recover those same quantities from
+        pixels. Part of it is tautological &mdash; five corruption modes (A6, B3, B4, B5, B6) are defined as
+        predicates over the circle and arrow alone, so the feature set restates those predicates almost verbatim.
+        The rest is genuine leakage: modes whose validity depends on scene content (A2, A4, A5, B1, C1, D3, D4)
+        are underdetermined by geometry alone, so any above-chance accuracy there means the corruption procedures
+        shift coordinate statistics in exploitable ways.
+      </p>
+    </div>
+
+    <h3 class="title is-4">Error profile</h3>
+    <div class="content has-text-justified">
+      <p>
+        The final validator's errors are strongly asymmetric: recall is 0.96 on invalid prompts but only 0.86 on
+        valid ones. On the 3,966-example test set this is 110 false accepts against 145 false rejects &mdash; the
+        skew toward false rejects is the safer failure mode for a trust gate, but false accepts remain the
+        safety-critical residual. Errors concentrate on geometrically subtle modes (wrong destination B1: 0.87,
+        wrong magnitude B3: 0.89, near-miss circle A3: 0.94) and the one mode whose validity depends on caption
+        and sketch jointly (under-determined caption D4: 0.95, on the largest invalid slice, n=487).
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Human evaluation -->
+<section class="section" id="human-eval">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Evaluation on Human-Drawn Sketches</h2>
+    <div class="content has-text-justified">
+      <p>
+        Every result above is measured on generator-produced prompts. We collected 280 sketches from real users
+        through a browser interface (roughly balanced, ~50% valid) and re-evaluated the trained validators with
+        <strong>no adaptation of any kind</strong> &mdash; no fine-tuning on human data, no prompt change, no
+        threshold recalibration.
+      </p>
+    </div>
+    <div class="table-container">
+      <table class="table clean-table is-fullwidth">
+        <thead>
+          <tr><th>Model</th><th>Acc</th><th>BAcc</th><th>F1</th><th>MCC</th><th>AUROC</th><th>R<sub>inv</sub></th><th>R<sub>val</sub></th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Qwen3-VL-2B</td><td>0.496</td><td>0.504</td><td>0.338</td><td>0.059</td><td>0.590</td><td>1.000</td><td>0.007</td></tr>
+          <tr><td>&nbsp;&nbsp;+ LoRA</td><td>0.629</td><td>0.631</td><td>0.620</td><td>0.276</td><td><strong>0.721</strong></td><td>0.790</td><td>0.472</td></tr>
+          <tr><td>Qwen3-VL-4B</td><td>0.596</td><td>0.591</td><td>0.527</td><td>0.275</td><td>0.607</td><td>0.217</td><td><strong>0.965</strong></td></tr>
+          <tr class="winner-row"><td>&nbsp;&nbsp;+ LoRA</td><td>0.636</td><td>0.637</td><td>0.632</td><td>0.281</td><td>0.721</td><td>0.746</td><td>0.528</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="content has-text-justified">
+      <p>
+        The headline is a large generalization gap: the best validator falls from 0.94 accuracy on synthetic data
+        to 0.636 on human sketches (MCC 0.83 &rarr; 0.281). Zero-shot models are degenerate in opposite directions
+        on this set &mdash; Qwen3-VL-2B rejects almost everything, Qwen3-VL-4B accepts almost everything &mdash;
+        so neither is usable as a trust gate at any threshold. Fine-tuning removes that degeneracy without closing
+        the gap; notably the 2B/4B scale advantage seen on synthetic data does not survive the domain shift.
+      </p>
+    </div>
+
+    <h3 class="title is-4">Production effort</h3>
+    <figure class="paper-figure">
+      <img src="./static/images/fig_effort.png"
+           alt="Outcome of every attempted trial in the web study, split by whether the participant had to draw a
+                sketch or write a prompt.">
+      <figcaption>
+        <strong>Cost of producing an instruction.</strong> Outcome of every attempted trial in the web study,
+        split by what the participant had to produce. Writing a prompt timed out three times as often as drawing
+        a circle and an arrow (34.8% vs. 11.4%, p&nbsp;&lt;&nbsp;10<sup>&minus;12</sup>). Usable-response rate and
+        session completion differ in the same direction but not significantly.
+      </figcaption>
+    </figure>
+    <div class="content has-text-justified">
+      <p>
+        Writing a prompt timed out on 34.8% of trials against 11.4% for drawing a circle and an arrow &mdash; a
+        3.1&times; difference (z=7.22, p&lt;10<sup>&minus;12</sup>).
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Limitations -->
+<section class="section" id="limitations">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Limitations</h2>
+    <div class="content has-text-justified">
+      <ul>
+        <li><strong>No control evaluation.</strong> We validate prompts but do not close the loop to manipulation.</li>
+        <li><strong>Synthetic-to-human sketch gap.</strong> The best validator drops from 0.94 to 0.636 accuracy on human sketches; closing this gap is the top priority for future work.</li>
+        <li><strong>Geometric shortcut leakage.</strong> The geometry-only diagnostic (93.24%) shows the generator is exploitable; reporting it per failure mode is a priority for the next release.</li>
+        <li><strong>Limited diversity.</strong> 40 LIBERO tasks and simulator renders only; broader scenes, embodiments, and camera viewpoints remain untested.</li>
+        <li><strong>Single seed.</strong> Reported runs are single-seed; variance estimates are future work.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- BibTeX -->
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@inproceedings{drawlaverify2026,
+  title     = {DrawVLA-Verify: Learning to Validate Circle-and-Arrow Robot Instructions from Simulator Ground Truth},
+  author    = {TODO: fill in after double-blind review},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2026},
+  note      = {Under review}
+}</code></pre>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <a class="icon-link" href="#"><i class="fab fa-github"></i></a>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content has-text-centered">
+          <p>
+            This page was built from the <a href="https://nerfies.github.io/">Nerfies project page</a> template,
+            which is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+          <p class="is-size-7">
+            Anonymous placeholder page for a double-blind submission &mdash; not for public distribution until
+            venue policy has been confirmed.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

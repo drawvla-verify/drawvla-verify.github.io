@@ -1,0 +1,240 @@
+body {
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.publication-title {
+  font-family: 'Google Sans', sans-serif;
+}
+
+.publication-authors {
+  font-family: 'Google Sans', sans-serif;
+}
+
+.publication-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.link-block a.button[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.hero.teaser {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.hero.teaser .subtitle {
+  max-width: 760px;
+  margin: 1.5rem auto 0;
+}
+
+/* ---- paper figures ---- */
+.paper-figure {
+  margin: 2rem auto;
+  max-width: 760px;
+  text-align: center;
+}
+
+/* wide figures (multi-panel galleries) may exceed the text column */
+.paper-figure.is-wide {
+  max-width: 100%;
+}
+
+.paper-figure img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.paper-figure figcaption {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #4a4a4a;
+  text-align: justify;
+  margin-top: 0.9rem;
+  padding: 0 0.5rem;
+}
+
+/* ---- small qualitative example grid ---- */
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 1.5rem auto 2rem;
+}
+
+.example-grid figure {
+  margin: 0;
+  text-align: center;
+}
+
+.example-grid img {
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  border: 1px solid #e8e8e8;
+  image-rendering: crisp-edges; /* 256px source: keep the overlay strokes sharp */
+}
+
+.example-grid figcaption {
+  font-size: 0.78rem;
+  color: #555;
+  margin-top: 0.5rem;
+  line-height: 1.35;
+}
+
+.tag-valid,
+.tag-invalid {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  margin-right: 0.25rem;
+}
+
+.tag-valid {
+  background: #d7f5dd;
+  color: #1a7f37;
+}
+
+.tag-invalid {
+  background: #ffe3e3;
+  color: #b42318;
+}
+
+@media screen and (max-width: 768px) {
+  .example-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ---- clean results tables (no cell borders, zebra striping, bold winner row) ---- */
+.table-container {
+  margin: 1.5rem auto;
+}
+
+.clean-table {
+  border: none;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.clean-table th,
+.clean-table td {
+  vertical-align: middle;
+  font-size: 0.92rem;
+  text-align: center;
+  padding: 0.85rem 1rem;
+  border: none;
+}
+
+.clean-table th:first-child,
+.clean-table td:first-child {
+  text-align: left;
+}
+
+.clean-table thead th {
+  background-color: #fff;
+  border-bottom: 2px solid #dbdbdb;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.clean-table tbody tr {
+  background-color: #fff;
+}
+
+.clean-table tbody tr:nth-child(even) {
+  background-color: #f7f7f7;
+}
+
+/* Tables with rowspan (e.g. Failure Taxonomy) can't use nth-child zebra
+   striping -- a spanned cell keeps one fixed background while the rows next
+   to it keep alternating, so the merged cell visibly clashes with its own
+   rows. Use flat rows + thin separators instead, and rule off each new
+   family group with a slightly heavier top border. */
+.clean-table.grouped {
+  border: 1px solid #dbdbdb;
+}
+
+.clean-table.grouped tbody tr {
+  background-color: #fff;
+}
+
+.clean-table.grouped tbody tr:nth-child(even) {
+  background-color: #fff;
+}
+
+/* full grid: vertical rules between columns, hairlines between rows */
+.clean-table.grouped td,
+.clean-table.grouped th {
+  border: 1px solid #e4e4e4;
+}
+
+.clean-table.grouped thead th {
+  border-bottom: 2px solid #cfcfcf;
+}
+
+/* heavier rule where a new family group begins */
+.clean-table.grouped tbody tr.group-start td {
+  border-top: 2px solid #cfcfcf;
+}
+
+.clean-table.grouped td[rowspan] {
+  vertical-align: middle;
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+.clean-table tbody tr.section-row {
+  background-color: #fff;
+  font-weight: 600;
+  text-align: left;
+}
+
+.clean-table tbody tr.winner-row {
+  background-color: #e8e8e8;
+  font-weight: 700;
+}
+
+.clean-table caption {
+  caption-side: top;
+  font-weight: 700;
+  font-size: 1.15rem;
+  padding-bottom: 1rem;
+}
+
+/* ---- BibTeX block ---- */
+#BibTeX pre {
+  background: #f5f5f5;
+  border-radius: 6px;
+  padding: 1.25rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+
+footer.footer {
+  padding: 2.5rem 1.5rem;
+  background-color: #fafafa;
+}
+
+footer .icon-link {
+  font-size: 1.6rem;
+  color: #4a4a4a;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
+/* keep wide tables from breaking the layout on small screens */
+@media screen and (max-width: 768px) {
+  .table-container {
+    overflow-x: auto;
+  }
+}
