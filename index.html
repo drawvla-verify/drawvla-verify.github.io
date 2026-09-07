@@ -215,7 +215,7 @@
         \[ V(P) \;=\; v_C(P)\,\wedge\,v_A(P)\,\wedge\,v_L(P)\,\wedge\,v_X(P)\,\wedge\,v_S(P) \]
       </p>
       <p>
-        The validation task is to learn a classifier \(f_\theta(P)\in\{\textsc{accept},\textsc{reject}\}\) that
+        The validation task is to learn a classifier \(f_\theta(P)\in\{\mathrm{accept},\,\mathrm{reject}\}\) that
         predicts \(V(P)\) from the observable prompt. Crucially, a prompt can satisfy every per-channel predicate
         yet still be invalid because the channels disagree (\(v_X=0\)) or the target is ambiguous (\(v_S=0\)),
         which is why validation cannot be reduced to independent per-channel checks.
